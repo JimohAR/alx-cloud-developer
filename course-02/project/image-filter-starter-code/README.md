@@ -1,5 +1,10 @@
 # Udagram Image Filtering Microservice
 
+ebs endpoint: http://alx-img-filter-dev.us-east-1.elasticbeanstalk.com/
+
+issue: I noticed the test image provided on the rubric page (in my case - http://alx-img-filter-dev.us-east-1.elasticbeanstalk.com/filteredimage?image_url=https://upload.wikimedia.org/wikipedia/commons/b/bd/Golden_tabby_and_white_kitten_n01.jpg) fails. The function causing this is the filterImageFromURL function in the provided utils.ts file. The function throws an exception with this particular image URL which was caught in my implementation of the filteredimage endpoint
+
+
 Udagram is a simple cloud application developed alongside the Udacity Cloud Engineering Nanodegree. It allows users to register and log into a web client, post photos to the feed, and process photos using an image filtering microservice.
 
 The project is split into three parts:
