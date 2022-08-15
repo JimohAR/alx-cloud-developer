@@ -1,6 +1,6 @@
 import express from 'express';
 import bodyParser from 'body-parser';
-import {filterImageFromURL, deleteLocalFiles} from './util/util';
+import { filterImageFromURL, deleteLocalFiles } from './util/util';
 
 (async () => {
 
@@ -9,7 +9,7 @@ import {filterImageFromURL, deleteLocalFiles} from './util/util';
 
   // Set the network port
   const port = process.env.PORT || 8082;
-  
+
   // Use the body parser middleware for post requests
   app.use(bodyParser.json());
 
@@ -29,18 +29,38 @@ import {filterImageFromURL, deleteLocalFiles} from './util/util';
 
   /**************************************************************************** */
 
+  app.get("/filteredimage/",
+    async (req, res) => {
+      let { image_url } = req.query;
+
+      if (image_url.match(/^https?:\/\/.+\.(jpg|jpeg|gif|png|tiff|bmp)$/gmi) === null) {
+        return res.status(415)
+          .send('bad image url\n acceptable image formats: jpg , jpeg , gif , png , tiff , and bmp');
+      }
+
+      try {
+        var img_path = await filterImageFromURL(image_url);
+      } catch (error) {
+        return res.status(422).send('image url broken');
+      }
+
+      res.status(200).sendFile(img_path);
+      res.on('finish', () => deleteLocalFiles([img_path]));
+
+    });
+
   //! END @TODO1
-  
+
   // Root Endpoint
   // Displays a simple message to the user
-  app.get( "/", async ( req, res ) => {
+  app.get("/", async (req, res) => {
     res.send("try GET /filteredimage?image_url={{}}")
-  } );
-  
+  });
+
 
   // Start the Server
-  app.listen( port, () => {
-      console.log( `server running http://localhost:${ port }` );
-      console.log( `press CTRL+C to stop server` );
-  } );
+  app.listen(port, () => {
+    console.log(`server running http://localhost:${port}`);
+    console.log(`press CTRL+C to stop server`);
+  });
 })();
