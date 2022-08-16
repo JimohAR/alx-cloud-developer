@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import bodyParser from 'body-parser';
 import { filterImageFromURL, deleteLocalFiles } from './util/util';
 
@@ -30,18 +30,18 @@ import { filterImageFromURL, deleteLocalFiles } from './util/util';
   /**************************************************************************** */
 
   app.get("/filteredimage/",
-    async (req, res) => {
-      let { image_url } = req.query;
+    async (req: Request, res: Response) => {
+      const image_url: string = req.query.image_url as string;
 
       if (image_url.match(/^https?:\/\/.+\.(jpg|jpeg|gif|png|tiff|bmp)$/gmi) === null) {
         return res.status(415)
-          .send('bad image url\n acceptable image formats: jpg , jpeg , gif , png , tiff , and bmp');
+          .send('bad image url\nmust be http[s]\nacceptable image formats: jpg , jpeg , gif , png , tiff , and bmp');
       }
 
       try {
-        var img_path = await filterImageFromURL(image_url);
+        var img_path: string = await filterImageFromURL(image_url) as string;
       } catch (error) {
-        return res.status(422).send('image url broken');
+        return res.status(422).send('unable to process image url');
       }
 
       res.status(200).sendFile(img_path);
@@ -53,7 +53,7 @@ import { filterImageFromURL, deleteLocalFiles } from './util/util';
 
   // Root Endpoint
   // Displays a simple message to the user
-  app.get("/", async (req, res) => {
+  app.get("/", async (req: Request, res: Response) => {
     res.send("try GET /filteredimage?image_url={{}}")
   });
 
