@@ -20,7 +20,6 @@ export const handler = middy(
     const success = await updateTodo(userId, todoId, updatedTodo);
 
     if (!success) {
-      logger.error(`Failed to update todo: ${todoId}`)
       return {
         statusCode: 500,
         body: "Failed to update todo"
