@@ -6,14 +6,12 @@ service: serverless-todo-app
 plugins:
   - serverless-webpack
   - serverless-iam-roles-per-function
-  - serverless-plugin-tracing
   - serverless-aws-documentation
   - serverless-reqvalidator-plugin
 
 provider:
   name: aws
-  runtime: nodejs12.x
-  lambdaHashingVersion: "20201221"
+  runtime: nodejs14.x
 
   stage: ${opt:stage, 'dev'}
   region: ${opt:region, 'us-east-1'}
@@ -25,24 +23,50 @@ provider:
   # Use these variables in the functions and resouorces section below. For example,
   # ${self:provider.environment.ATTACHMENT_S3_BUCKET}
   environment:
-    PROJECT_NAME: Todo-app
-    TODOS_TABLE: Todos-${self:provider.stage}
-    TODOS_CREATED_AT_INDEX: CreatedAtIndex
-    ATTACHMENT_S3_BUCKET: Todo-app-images-${self:provider.stage}
-    SIGNED_URL_EXPIRATION: 300
+    PROJECT_NAME: todo-app
+    TODOS_TABLE: todos-${self:provider.stage}
+    ATTACHMENT_S3_BUCKET: todo-app-images-${self:provider.stage}
+    SIGNED_URL_EXPIRATION: 3000
 
   logs:
     # Enable API Gateway logs
     restApi: true
 
-  iam:
-    role:
-      statements:
-        - Effect: Allow
-          Action:
-            - xray:PutTelemetryRecords
-            - xray:PutTraceSegments
-          Resource: "*"
+custom:
+  documentation:
+    api:
+      info:
+        version: '1.0.0'
+        title: serverless-api
+        description: serverless-api
+    models:
+      - name: CreateTodoRequest
+        contentType: "application/json"
+        schema:
+          required:
+            - name
+            - dueDate
+          properties:
+            name:
+              minLength: 1
+              type: string
+            dueDate:
+              type: string
+      - name: UpdateTodoRequest
+        contentType: "application/json"
+        schema:
+          required:
+            - name
+            - dueDate
+            - done
+          properties:
+            name:
+              minLength: 1
+              type: string
+            dueDate:
+              type: string
+            done:
+              type: boolean
 
 functions:
   Auth:
@@ -67,8 +91,8 @@ functions:
       - Effect: Allow
         Action:
           - xray:PutTraceSegments
-        Resource:
-          - "*"
+        Resource: 
+          - '*'
 
   # TODO: Configure this function -
   # Provide iamRoleStatements property. Decide the Actions and AWS Resource.
@@ -95,6 +119,8 @@ functions:
       - Effect: Allow
         Action:
           - xray:PutTraceSegments
+        Resource: 
+          - '*'
 
   # TODO: Configure this function
   # Provide property for setting up CORS, Authorizer, iamRoleStatements, and request schemas
@@ -107,8 +133,6 @@ functions:
           cors: true
           authorizer: Auth
           documentation:
-            summary: "Update a todo item"
-            description: "Update a todo item"
             requestModels:
               "application/json": UpdateTodoRequest
           reqValidatorName: RequestBodyValidator
@@ -121,6 +145,8 @@ functions:
       - Effect: Allow
         Action:
           - xray:PutTraceSegments
+        Resource: 
+          - '*'
 
   # TODO: Configure this function
   # Provide property for setting up CORS, Authorizer, iamRoleStatements
@@ -141,6 +167,9 @@ functions:
       - Effect: Allow
         Action:
           - xray:PutTraceSegments
+        Resource: 
+          - '*'
+    
 
   # TODO: Configure this function
   # Provide property for setting up CORS, Authorizer, iamRoleStatements

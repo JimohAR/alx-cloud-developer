@@ -7,49 +7,49 @@ import { createLogger } from '../utils/logger'
 
 const logger = createLogger('dataLayer')
 
-export class ToDoAccess {
+export class DataLayer {
     constructor(
         private readonly dbClient: DocumentClient = new AWS.DynamoDB.DocumentClient(),
         private readonly s3Client: Types = new AWS.S3({ signatureVersion: 'v4' }),
-        private readonly s3BucketName = process.env.S3_BUCKET_NAME,
+        private readonly s3BucketName = process.env.ATTACHMENT_S3_BUCKET,
         private readonly todosTable = process.env.TODOS_TABLE,
-        private readonly todosTableIndex = process.env.TODOS_TABLE_INDEX_NAME
+        private readonly urlExp = process.env.SIGNED_URL_EXPIRATION
     ) { }
 
     // getTodosForUser
     async getTodosForUser(userId: String): Promise<TodoItem[]> {
-        // logger.info(`Getting todos for user ${userId}`)
         const result = await this.dbClient
             .query({
                 TableName: this.todosTable,
-                IndexName: this.todosTableIndex,
-                KeyConditionExpression: 'userId = :userId',
+                KeyConditionExpression: '#userId = :userId',
                 ExpressionAttributeNames: {
-                    '#userId': userId
+                    "#userId": "userId"
+                },
+                ExpressionAttributeValues: {
+                    ":userId": userId
                 }
             }).promise()
 
-        // logger.info(`Returning ${result.Count} items for user ${userId}.`)
         return result.Items as TodoItem[]
     }
 
     // updateTodo
     async updateTodo(userId: String, todoId: String, todo: UpdateTodoRequest): Promise<Boolean> {
-        // TODO more validation checks
+        logger.info(`Attemping to update todo - ${todoId}`)
         try {
             await this.dbClient
                 .update({
                     TableName: this.todosTable,
                     Key: {
-                        userId,
-                        todoId
+                        "userId": userId,
+                        "todoId": todoId
                     },
                     UpdateExpression:
                         'set #name = :name, #dueDate = :duedate, #done = :done',
                     ExpressionAttributeValues: {
-                        ':name': todo.name,
-                        ':duedate': todo.dueDate,
-                        ':done': todo.done
+                        ':name': todo['name'],
+                        ':duedate': todo['dueDate'],
+                        ':done': todo['done']
                     },
                     ExpressionAttributeNames: {
                         '#name': 'name',
@@ -60,12 +60,11 @@ export class ToDoAccess {
                 })
                 .promise()
         } catch (err) {
-            logger.error('Failure updating todo', {
-                error: err
-            })
+            logger.error(`Failure updating todo - ${todoId}`, err)
             return false
         }
 
+        logger.info(`Todo - ${todoId} updated`)
         return true
     }
 
@@ -73,17 +72,13 @@ export class ToDoAccess {
     // createTodo
     async createTodo(todo: TodoItem): Promise<TodoItem> {
         logger.info("Creating new todo")
-        try {
-            await this.dbClient.put({
-                TableName: this.todosTable,
-                Item: todo
-            }).promise()
+        await this.dbClient.put({
+            TableName: this.todosTable,
+            Item: todo
+        }).promise()
 
-            logger.info(`Created todo ${todo.todoId} for user ${todo.userId}.`)
-            return todo
-        } catch (err) {
-            throw err
-        }
+        logger.info(`Created new todo - ${todo.todoId}`)
+        return todo as TodoItem
     }
 
     // deleteTodo
@@ -92,13 +87,13 @@ export class ToDoAccess {
             await this.dbClient.delete({
                 TableName: this.todosTable,
                 Key: {
-                    userId,
-                    todoId
+                    "userId": userId,
+                    "todoId": todoId
                 }
             }).promise()
-            logger.info(`Successfully deleted todo ${todoId}`)
+            logger.info(`todo - ${todoId} deleted`)
         } catch (err) {
-            logger.error('Error deleting item from database', { error: err })
+            logger.error('Error deleting todo from database', err)
             return false
         }
         return true
@@ -106,14 +101,14 @@ export class ToDoAccess {
 
     // createAttachmentPresignedUrl
     async createAttachmentPresignedUrl(todoId: string): Promise<string> {
-        logger.info("Generating URL");
+        logger.info("Generating PresignedUrl");
 
         const url: string = this.s3Client.getSignedUrl('putObject', {
             Bucket: this.s3BucketName,
             Key: todoId,
-            Expires: 300,
+            Expires: this.urlExp,
         });
 
-        return url;
+        return url as string;
     }
 }

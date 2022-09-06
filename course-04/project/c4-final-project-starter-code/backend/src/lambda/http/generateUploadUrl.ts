@@ -5,7 +5,7 @@ import * as middy from 'middy'
 import { cors, httpErrorHandler } from 'middy/middlewares'
 
 import { createAttachmentPresignedUrl } from '../../businessLogic/todos'
-import { getUserId } from '../utils'
+// import { getUserId } from '../utils'
 import { createLogger } from '../../utils/logger'
 
 const logger = createLogger('S3:generateUploadUrl')
@@ -17,7 +17,11 @@ export const handler = middy(
       var URL = await createAttachmentPresignedUrl(todoId);
 
     } catch (err) {
-      logger.error("Failed to generate URL", err)
+      logger.error("Failed to generate PresignedUrl", err)
+      return {
+        statusCode: 404,
+        body: ""
+      }
     }
 
     return {
